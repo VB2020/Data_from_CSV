@@ -1,0 +1,593 @@
+package com.company;
+
+import au.com.bytecode.opencsv.CSVWriter;
+import au.com.bytecode.opencsv.CSVReader;
+
+import java.io.*;
+import java.text.ParseException;
+import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+class Write_and_read
+{
+//считывает csv с двумястолбцами разделенными "," и записывает в hashmap (key=id, val=услуга)
+public LinkedHashMap<String, String> Read_line_CSV(String file, String splitter) throws ParseException, IOException
+{
+LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
+BufferedReader br = new BufferedReader(new FileReader(file));
+String line = null;
+while((line=br.readLine())!=null)
+{
+String str[] = line.split(splitter);
+for(int i=0;i<str.length;i++)
+{
+if (i==1)
+{
+map.put(str[0], str[i]);
+}
+}
+}
+return map;
+}
+//Считывает из файла услуги и id пользователя, возврощает hashmap (key=id, val=список услуг для этого id)
+public LinkedHashMap<String, List<String>> Read_CSV(String file, String splitter) throws ParseException, IOException
+{
+LinkedHashMap<String, List<String>> Servicemap = new LinkedHashMap<String, List<String>>();
+BufferedReader br = new BufferedReader(new FileReader(file));
+String line = null;
+while((line=br.readLine())!=null)
+{
+List<String> service = new ArrayList<>();
+String str[] = line.split(splitter);
+for(int i=0;i<str.length;i++)
+{
+if (i==2)
+{
+if (Servicemap.containsKey(str[1])!=true)
+{
+service.add(str[i]);
+Servicemap.put(str[1], service);
+}
+else
+{
+service = Servicemap.get(str[1]);
+service.add(str[i]);
+Servicemap.put(str[1], service);
+}
+}
+}
+}
+return Servicemap;
+}
+//Запись в файл
+}
+class Convert_map
+{
+//Получаем список ключей для hashmap
+public List<String> Get_key_list(LinkedHashMap<String, List<String>> hashm)
+{
+List<String> pd_list = new ArrayList<>();
+Object[] TMP = new Object[hashm.size()];
+TMP = hashm.keySet().toArray();
+for (int i = 0; i < hashm.size(); i++)
+{
+pd_list.add(TMP[i].toString());
+}
+
+return pd_list;
+}
+public List<String> Get_key_int(LinkedHashMap<String, Integer> hashm)
+{
+List<String> pd_list = new ArrayList<>();
+Object[] TMP = new Object[hashm.size()];
+TMP = hashm.keySet().toArray();
+for (int i = 0; i < hashm.size(); i++)
+{
+pd_list.add(TMP[i].toString());
+}
+
+return pd_list;
+}
+public List<String> Get_key_str(LinkedHashMap<String, String> hashm)
+{
+List<String> pd_list = new ArrayList<>();
+Object[] TMP = new Object[hashm.size()];
+TMP = hashm.keySet().toArray();
+for (int i = 0; i < hashm.size(); i++)
+{
+pd_list.add(TMP[i].toString());
+}
+
+return pd_list;
+}
+//Удаляем из списка 1 эл-ты списка 2 если они есть в списке 1
+public List<String> Rem_key(List<String> list1, List<String> list2)
+{
+int tmp;
+List<String> res_list = new ArrayList<>();
+for (int i = 0; i < list1.size(); i++)
+{
+tmp = 1;
+for (int j = 0; j < list2.size(); j++)
+{
+if (list1.get(i).equals(list2.get(j)))
+{
+tmp = 90;
+}
+}
+if (tmp == 1)
+{
+res_list.add(list1.get(i));
+}
+}
+return res_list;
+}
+//получить пару услуга количество ее повторения
+public LinkedHashMap<String, Integer> Get_serv (LinkedHashMap<String, List<String>> hashm, List<String> keys)
+{
+LinkedHashMap<String, Integer> map = new LinkedHashMap<String, Integer>();
+List<String> podp = new ArrayList<>();
+for (int i = 0; i < keys.size(); i++)
+{
+podp = hashm.get(keys.get(i));
+for (int z = 0; z < podp.size(); z++)
+{
+if (!map.containsKey(podp.get(z))) {
+map.put(podp.get(z), 1);
+} else {
+map.put(podp.get(z), map.get(podp.get(z)) + 1);
+}
+}
+}
+return map;
+}
+//Записываем услуги где одна повторяется (указывая минимальную длину подпослед-ти)
+//получим новый hashmap пара (key = id пользователя val = номер услуги (наиболее вероятной))
+public LinkedHashMap<String, String> Get_povt (LinkedHashMap<String, List<String>> hashm, List<String> keys, int lon1, int lon2, double ver)
+{
+LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
+List<String> podp = new ArrayList<>();
+double dlm, dl;
+int ilm, il, num=0;
+for (int i = 0; i < hashm.size(); i++)
+{
+LinkedHashMap<String, Integer> tmp_map = new LinkedHashMap<String, Integer>();
+List<String> col_usl_tmp = new ArrayList<>();//список индексов tmp_map (услуги)
+podp = hashm.get(keys.get(i));
+for (int z = 0; z < podp.size(); z++)
+{
+if (!tmp_map.containsKey(podp.get(z))) {
+tmp_map.put(podp.get(z), 1);
+col_usl_tmp.add(podp.get(z));
+} else {
+tmp_map.put(podp.get(z), tmp_map.get(podp.get(z)) + 1);
+}
+}
+List<Double> list_ver = new ArrayList<>();
+il = podp.size();
+dl =Double.valueOf(il);
+for (int l = 0; l < tmp_map.size(); l++)
+{
+ilm = tmp_map.get(col_usl_tmp.get(l));
+dlm = Double.valueOf(ilm);
+list_ver.add(dlm/dl);
+}
+if ((tmp_map.size()==1)&&(podp.size()>= lon1))
+{
+num++;
+map.put(keys.get(i), podp.get(0));
+}
+else {
+for (int x = 0; x < list_ver.size(); x++)
+if ((list_ver.get(x) >= ver) && (podp.size() >= lon2))
+{
+num++;
+map.put(keys.get(i), col_usl_tmp.get(x));
+}
+}
+}
+System.out.println("Обрезали " + num);
+return map;
+}
+//Получаем из hashmap<string, int> новый hashmap<string, int> из эл-ов записанных в List<String>
+public LinkedHashMap<String, Integer> Cut_key (LinkedHashMap<String, Integer> map, List<String> getlist)
+{
+LinkedHashMap<String, Integer> new_map = new LinkedHashMap<String, Integer>();
+for (int i = 0; i < getlist.size(); i++)
+{
+new_map.put(getlist.get(i), map.get(getlist.get(i)));
+}
+
+return new_map;
+}
+//С помощью списка услуг получим подсписок в котором повторения меньше мин числа
+public List<String> Cut_serv (LinkedHashMap<String, Integer> get_map, List<String> keys, int min)
+{
+List<String> sub_list = new ArrayList<>();
+for (int i = 0; i < keys.size(); i++)
+{
+if (get_map.get(keys.get(i)) > min)
+{
+sub_list.add(keys.get(i));
+}
+}
+
+return sub_list;
+}
+//С помощью списка услуг получим подсписок в котором повторения меньше мин числа
+public List<String> Cut_serv_min_list (LinkedHashMap<String, String > get_map, List<String> keys, int min)
+{
+List<String> sub_list = new ArrayList<>();
+String A;
+int B;
+for (int i = 0; i < keys.size(); i++)
+{
+A = get_map.get(keys.get(i));
+B = Integer.valueOf(A);
+if (B > min)
+{
+sub_list.add(keys.get(i));
+}
+}
+
+return sub_list;
+}
+//С помощью списка услуг получим подсписок в котором повторения меньше мин числа
+public List<String> Cut_serv_max_list (LinkedHashMap<String, String > get_map, List<String> keys, int max)
+{
+List<String> sub_list = new ArrayList<>();
+String A;
+int B;
+for (int i = 0; i < keys.size(); i++)
+{
+A = get_map.get(keys.get(i));
+B = Integer.valueOf(A);
+if (B < max)
+{
+sub_list.add(keys.get(i));
+}
+}
+
+return sub_list;
+}
+//С помощью списка услуг получим новый Hashmap где число меньше min for String
+public void Cut_serv_min (LinkedHashMap<String, String> get_map, List<String> keys, int min)
+{
+LinkedHashMap<String, String> sub_map = new LinkedHashMap<String, String>();
+String A;
+int B;
+for (int i = 0; i < keys.size(); i++)
+{
+A = get_map.get(keys.get(i));
+B = Integer.valueOf(A);
+if (B > min)
+{
+sub_map.put(keys.get(i), A);
+}
+get_map.remove(keys.get(i));
+}
+
+get_map.putAll(sub_map);
+}
+//С помощью списка услуг получим новый Hashmap где число меньше min for String
+public void Cut_serv_max (LinkedHashMap<String, String> get_map, List<String> keys, int max)
+{
+LinkedHashMap<String, String> sub_map = new LinkedHashMap<String, String>();
+String A;
+int B;
+for (int i = 0; i < keys.size(); i++)
+{
+A = get_map.get(keys.get(i));
+B = Integer.valueOf(A);
+if (B < max)
+{
+sub_map.put(keys.get(i), A);
+}
+get_map.remove(keys.get(i));
+}
+
+get_map.putAll(sub_map);
+}
+//Получаем пару (ключ=id пользователя значение= последняя услуга в подпоследовательности)
+public LinkedHashMap<String, String> Get_last_serv (LinkedHashMap<String, List<String>> hashm, List<String> servlist)
+{
+LinkedHashMap<String, String> new_map = new LinkedHashMap<String, String>();
+for (int i = 0; i < servlist.size(); i++)
+{
+if (hashm.get(servlist.get(i))!=null)
+{
+List<String> tmp_list = hashm.get(servlist.get(i));
+int p = (tmp_list.size()) - 1;
+new_map.put(servlist.get(i), tmp_list.get(p));
+}
+}
+return new_map;
+}
+//запись элементов в Hashmap hashmap-ов
+public void write_HASHHASH (LinkedHashMap<String, LinkedHashMap<String, String>> map, String key1, String key2, String val)
+{
+LinkedHashMap<String, String> tmp = new LinkedHashMap<String, String>();
+if (map.get(key1)==null)
+{
+tmp.put(key2, val);
+map.put(key1, tmp);
+}
+else
+{
+tmp=map.get(key1);
+tmp.put(key2, val);
+map.put(key1, tmp);
+}
+}
+//получить ключ по значению
+public <K, V> K getKey(LinkedHashMap<K, V> map, V value) {
+for (Map.Entry<K, V> entry : map.entrySet()) {
+if (entry.getValue().equals(value)) {
+return entry.getKey();
+}
+}
+return null;
+}
+
+
+
+}
+class Ocenka extends Convert_map
+{
+//Оценка по количеству элементов
+public LinkedHashMap<String, String> Ocenka_kol (LinkedHashMap<String, List<String>> Podposl_data1, LinkedHashMap<String,
+String> last_serv, List<String> res1_list, LinkedHashMap<String, LinkedHashMap<String, String>> Podp_ver_usl, int maxpain)
+{
+LinkedHashMap<String, String> res_map = new LinkedHashMap<String, String>();
+//hasmap для (key = услуга Val = список услуг с ней контактирующий)
+//LinkedHashMap<String, List<String>> Podposl_usl = new LinkedHashMap<String, List<String>>();
+//hasmap для (key = услуга Val = список вероятностей услуг с ней контактирующий)
+//LinkedHashMap<String, List<String>> Podposl_ver_usl = new LinkedHashMap<String, List<String>>();
+//список услуг (keys) Podposl_usl, Podposl_ver_usl
+List<String> uslug_list = new ArrayList<>();
+List<String> tmplist = new ArrayList<>();
+String tmp_usl, tmp_user;
+int ps;
+String tmp_haskey, tmp_hashval;
+int has, tmmmppp=0;
+
+for (int t =0; t < res1_list.size(); t++)//получаем !!услугу!! для которой надо предсказать для каждого пользователя
+{
+//hasmap услуги и их количество
+LinkedHashMap<String, Integer> tmp_colvser = new LinkedHashMap<String, Integer>();
+//Список услуг из hashmap
+List<String> tmp_colvser_list = new ArrayList<>();
+tmp_user = res1_list.get(t);// Пользователь
+tmp_usl = last_serv.get(res1_list.get(t));//Услуга для которой надо предсказать
+List<String> tmpmax_list = new ArrayList<>();
+
+// получаем !!подпоследовательность!! для каждого пользователя и проверяем наличие этой услуги
+for (int v = 0; v < res1_list.size(); v++)
+{
+tmplist = Podposl_data1.get(res1_list.get(v));//подпоследовательность для пользователя
+if (tmplist.contains(tmp_usl)==true)//подпоследовательность содержит услугу
+for (int i = 0; i < tmplist.size();i++)
+{
+if (tmp_colvser_list.contains(tmplist.get(i))!=true)
+{
+tmp_colvser_list.add(tmplist.get(i));
+tmp_colvser.put(tmplist.get(i), 1);
+}
+else
+{
+ps =tmp_colvser.get(tmplist.get(i));
+tmp_colvser.put(tmplist.get(i), ps + 1);
+}
+}
+}
+/*for (int g = 0; g < tmp_colvser_list.size(); g++)
+{
+tmp_haskey = tmp_colvser_list.get(g);//номер услуги в подпосл
+has = tmp_colvser.get(tmp_haskey);
+tmp_hashval = String.valueOf(has);// кол-во повторений
+write_HASHHASH(Podp_ver_usl, tmp_usl, tmp_haskey, tmp_hashval);
+}
+String max = Collections.max(Podp_ver_usl.get(tmp_usl).values());
+String max_key = getKey(Podp_ver_usl.get(tmp_usl), max);
+res_map.put(tmp_user, Podp_ver_usl.get(tmp_usl).get(max_key));
+//System.out.println(Podp_ver_usl.get(tmp_usl));
+//System.out.println("услуга = " + tmp_usl + "max_val = " + max + "max_key = " + max_key);
+*/
+//--------------------------
+if (tmp_colvser_list.size()>=1)
+{
+List<String> haskey_list = new ArrayList<>();
+for (int g = 0; g < tmp_colvser_list.size(); g++) {
+tmp_haskey = tmp_colvser_list.get(g);//номер услуги в подпосл
+has = tmp_colvser.get(tmp_haskey);
+tmp_hashval = String.valueOf(has);// кол-во повторений
+haskey_list.add(tmp_haskey);
+write_HASHHASH(Podp_ver_usl, tmp_usl, tmp_haskey, tmp_hashval);
+}
+tmpmax_list = Cut_serv_max_list(Podp_ver_usl.get(tmp_usl),haskey_list,maxpain);
+Cut_serv_max(Podp_ver_usl.get(tmp_usl),haskey_list,maxpain);//убираем оценки больше мах
+//Cut_serv_min(Podp_ver_usl.get(tmp_usl),tmpmax_list,7);//убираем оценки меньше мин
+if (Podp_ver_usl.get(tmp_usl).size()>=1)
+{
+//System.out.println(Podp_ver_usl);
+String max = Collections.max(Podp_ver_usl.get(tmp_usl).values());
+String max_key = getKey(Podp_ver_usl.get(tmp_usl), max);
+res_map.put(tmp_user, Podp_ver_usl.get(tmp_usl).get(max_key));
+//System.out.println(Podp_ver_usl);
+//System.out.println("услуга = " + tmp_usl + "max_val = " + max + "max_key = " + max_key);
+}
+else
+{
+tmmmppp++;
+res_map.put(tmp_user, tmp_usl);
+//not_get.add(tmp_user);
+}
+}
+else
+{
+tmmmppp++;
+res_map.put(tmp_user, tmp_usl);
+//not_get.add(tmp_user);
+}
+}
+System.out.println("Еще можно обработать после 2-й оценки "+tmmmppp);
+return res_map;
+}
+//оценка по порядку элементов
+public LinkedHashMap<String, String> Ocenka_Posl (LinkedHashMap<String, List<String>> Podposl_data1,
+LinkedHashMap<String, String> last_serv, List<String> res1_list,
+LinkedHashMap<String, LinkedHashMap<String, String>> Podp_ver_usl,
+List<String> not_get, int min)
+{
+int tmmmppp = 0;
+LinkedHashMap<String, String> res_map = new LinkedHashMap<String, String>();
+//hasmap для (key = услуга Val = список услуг с ней контактирующий)
+//LinkedHashMap<String, List<String>> Podposl_usl = new LinkedHashMap<String, List<String>>();
+//hasmap для (key = услуга Val = список вероятностей услуг с ней контактирующий)
+//LinkedHashMap<String, List<String>> Podposl_ver_usl = new LinkedHashMap<String, List<String>>();
+//список услуг (keys) Podposl_usl, Podposl_ver_usl
+List<String> uslug_list = new ArrayList<>();
+List<String> tmplist = new ArrayList<>();
+String tmp_usl, tmp_user;
+int ps;
+String tmp_haskey, tmp_hashval;
+int has;
+
+for (int t =0; t < res1_list.size(); t++)//получаем !!услугу!! для которой надо предсказать для каждого пользователя
+{
+//hasmap услуги и их количество
+LinkedHashMap<String, Integer> tmp_colvser = new LinkedHashMap<String, Integer>();
+//Список услуг из hashmap
+List<String> tmp_colvser_list = new ArrayList<>();
+tmp_user = res1_list.get(t);// Пользователь
+tmp_usl = last_serv.get(res1_list.get(t));//Услуга для которой надо предсказать
+List<String> tmpmin_list = new ArrayList<>();
+
+// получаем !!подпоследовательность!! для каждого пользователя и проверяем наличие этой услуги
+for (int v = 0; v < res1_list.size(); v++)
+{
+tmplist = Podposl_data1.get(res1_list.get(v));//подпоследовательность для пользователя
+if (tmplist.size()>1)
+{
+String tmplist1 = tmplist.remove(tmplist.size() - 1);
+if (tmplist.contains(tmp_usl) == true)//подпоследовательность содержит услугу
+{
+tmplist.add(tmplist1);
+for (int i = 0; i < tmplist.size() - 1; i++)
+{
+if ((tmp_usl.equals(tmplist.get(i)))&&(!tmplist.get(i).equals(tmplist.get(i + 1))))
+{
+if (tmp_colvser_list.contains(tmplist.get(i + 1)) != true)
+{
+tmp_colvser_list.add(tmplist.get(i + 1));
+tmp_colvser.put(tmplist.get(i + 1), 1);
+} else {
+ps = tmp_colvser.get(tmplist.get(i + 1));
+tmp_colvser.put(tmplist.get(i + 1), ps + 1);
+}
+}
+}
+}
+}
+}
+if (tmp_colvser_list.size()>=1)
+{
+List<String> haskey_list = new ArrayList<>();
+for (int g = 0; g < tmp_colvser_list.size(); g++) {
+tmp_haskey = tmp_colvser_list.get(g);//номер услуги в подпосл
+has = tmp_colvser.get(tmp_haskey);
+tmp_hashval = String.valueOf(has);// кол-во повторений
+haskey_list.add(tmp_haskey);
+write_HASHHASH(Podp_ver_usl, tmp_usl, tmp_haskey, tmp_hashval);
+}
+tmpmin_list = Cut_serv_min_list(Podp_ver_usl.get(tmp_usl),haskey_list,min);
+Cut_serv_min(Podp_ver_usl.get(tmp_usl),haskey_list,min);//убираем оценки меньше мин
+Cut_serv_max(Podp_ver_usl.get(tmp_usl),tmpmin_list,100);//убираем оценки больше мах
+if (Podp_ver_usl.get(tmp_usl).size()>=1)
+{
+//System.out.println(Podp_ver_usl);
+String max = Collections.max(Podp_ver_usl.get(tmp_usl).values());
+String max_key = getKey(Podp_ver_usl.get(tmp_usl), max);
+res_map.put(tmp_user, Podp_ver_usl.get(tmp_usl).get(max_key));
+//System.out.println(Podp_ver_usl);
+//System.out.println("услуга = " + tmp_usl + "max_val = " + max + "max_key = " + max_key);
+}
+else
+{
+tmmmppp++;
+//res_map.put(tmp_user, tmp_usl);
+not_get.add(tmp_user);
+}
+}
+else
+{
+tmmmppp++;
+//res_map.put(tmp_user, tmp_usl);
+not_get.add(tmp_user);
+}
+}
+//System.out.println(Podp_ver_usl);
+System.out.println("Еще можно обработать после первой оценки "+tmmmppp);
+return res_map;
+}
+}
+public class Main
+{
+
+public static void main(String[] args) throws ParseException, IOException
+{
+//Объявляем элементы классов
+Write_and_read WR = new Write_and_read();
+Convert_map Conv = new Convert_map();
+Ocenka Ocn = new Ocenka();
+//Присваеваем переменным пути к файлам для чтения
+String read1 = "K:/New_data_table1_1.csv";
+String read2 = "K:/New_data_table2_1.csv";
+String read3 = "K:/New_data_table3_1.csv";
+
+//Разделитель
+String split = ",";
+
+//---------------------------------------------------------
+//---------------Read_requster-----------------
+BufferedReader br_req1 = new BufferedReader(new FileReader("K:/sample.csv"));
+String line = null;
+List<String> req = new ArrayList<String>();//Список пользователей
+int dj1=0;
+while((line=br_req1.readLine())!=null)
+{
+String str[] = line.split(",");
+for (int i = 0; i < str.length; i++)
+{
+if (i == 0) {
+req.add(dj1, str[i]);
+dj1 =dj1 + 1;
+}
+}
+}
+
+
+
+//1) получаем набор подпослед-й
+//hashmap (key = пользователь, val = последовательность услуг) запись из файла в hashmap
+LinkedHashMap<String, List<String>> Podposl_data1 = WR.Read_CSV(read1, split);
+LinkedHashMap<String, List<String>> Podposl_data2 = WR.Read_CSV(read2, split);
+LinkedHashMap<String, List<String>> Podposl_data3 = WR.Read_CSV(read3, split);
+//Список пользователей из hashmap (список ключей)
+List<String> pd_list1 = Conv.Get_key_list(Podposl_data1);
+List<String> pd_list2 = Conv.Get_key_list(Podposl_data2);
+List<String> pd_list3 = Conv.Get_key_list(Podposl_data3);
+//----------------------------------------------------------------------------------------
+//2) убираем те наборы где одна услуга повторяется более чем Х раз
+//Записываем в новый Hashmap пару (key = id пользователя val = номер услуги (наиболее вероятной)
+LinkedHashMap<String, String> Povt_serv1 = Conv.Get_povt(Podposl_data1, pd_list1, 2,4, 0.6);
+LinkedHashMap<String, String> Povt_serv2 = Conv.Get_povt(Podposl_data2, pd_list2, 3,3, 0.666);
+LinkedHashMap<String, String> Povt_serv3 = Conv.Get_povt(Podposl_data3, pd_list3, 3,3, 0.666);
+//Список пользователей которых надо исключить (для которых отработало усл-е повторения)
+List<String> pov_list1 = Conv.Get_key_str(Povt_serv1);
+List<String> pov_list2 = Conv.Get_key_str(Povt_serv2);
+List<String> pov_list3 = Conv.Get_key_str(Povt_serv3);
+//Создаем новый список пользователей без этих услуг
